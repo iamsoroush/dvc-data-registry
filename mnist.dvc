@@ -1,0 +1,5 @@
+outs:
+- md5: 03a099d0456cb8b110baed0e4563baec.dir
+  size: 1154264
+  nfiles: 2002
+  path: mnist

@@ -1,4 +1,6 @@
 [core]
-    remote = storage
+    remote = ctbrain
 ['remote "storage"']
     url = gdrive://1oSwpexBh_OosVi-SQVE8MSvSZmALpz5b
+['remote "ctbrain"']
+    url = gdrive://12ZyX-R1JuVppv7Vf0ilIi80f3V6jiV1K

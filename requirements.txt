@@ -2,4 +2,6 @@ dvc[gdrive]
 metaflow
 SimpleITK
 pydicom
-dicognito
+pydantic
+pandas
+pandas-profiling

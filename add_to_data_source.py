@@ -2,21 +2,23 @@ from pathlib import Path
 import shutil
 import os
 
+import pandas as pd
+from pandas_profiling import ProfileReport
 from metaflow import FlowSpec, step, Parameter
 import SimpleITK as sitk
 import pydicom
 
-from utils import get_qualified_series_id_for_study, anonymize, delete_folder_content
+from utils import get_qualified_series_id_for_study, anonymize, delete_folder_content, get_series_info
 
 
 class LinearFlow(FlowSpec):
-    src_dir = Parameter('src-dir',
-                        required=True)
+    src_dir: str = Parameter('src-dir',
+                             required=True)
     data_source_name: str = Parameter('datasource-name',
                                       required=True)
     overwrite: bool = Parameter('overwrite',
                                 default=False)
-    datasets_folder = "CTBrain Datasets"
+    datasets_folder: str = "CTBrain Datasets"
 
 
     @step
@@ -82,28 +84,43 @@ class LinearFlow(FlowSpec):
 
     @step
     def create_meta_data_file(self):
+        infos = list()
+
+        for series_path in self.dst.iterdir():
+            if series_path.is_dir():
+                infos.append(get_series_info(series_path))
+
+        df = pd.DataFrame(infos)
+        df.to_csv(self.dst.joinpath('meta-data.csv'), index=False)
+        profile = ProfileReport(df, title=f"{self.data_source_name} DataSource's Profiling Report")
+        profile.to_file(self.dst.joinpath('meta-data-report.html'))
 
         self.next(self.push_to_remote)
 
     @step
     def push_to_remote(self):
-        commands = list()
+        # commands = list()
+        #
+        # commands.append(f'git add "{self.datasets_folder}/*.dvc" "{self.datasets_folder}/.gitignore" .gitignore .dvcignore .dvc/config .dvc/.gitignore')
+        # commands.append(f'git commit -m "track the {self.data_source_name} dataset in {self.datasets_folder}"')
+        # commands.append(f'dvc push')
+        #
+        # for cmd in commands:
+        #     stream = os.popen(cmd)
+        #     print(stream.read().strip())
 
-        commands.append(f'git add "{self.datasets_folder}/*.dvc" "{self.datasets_folder}/.gitignore" .gitignore .dvcignore .dvc/config .dvc/.gitignore')
-        commands.append(f'git commit -m "track the {self.data_source_name} dataset in {self.datasets_folder}"')
-        commands.append(f'dvc push')
-
-        for cmd in commands:
-            stream = os.popen(cmd)
-            print(stream.read().strip())
+        cmd = f'DATA_ROOT={self.datasets_folder} TARGET_DS_NAME={self.data_source_name} ADDED_DS_PATH={self.src_dir} sh dvcpush.sh '
+        stream = os.popen(cmd)
+        print(stream.read().strip())
 
         self.next(self.end)
 
     @step
     def end(self):
-        print(f'qualified series: ')
-        print(self.qualified_series)
+        # print(f'qualified series: ')
+        # print(self.qualified_series)
         # print('the data source path is still: %s' % self.data_src_path)
+        pass
 
 
 if __name__ == '__main__':

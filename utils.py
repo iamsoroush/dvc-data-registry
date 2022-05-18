@@ -5,6 +5,7 @@ import typing
 import SimpleITK as sitk
 import pydicom
 from pydicom import dcmread
+from pydantic import BaseModel
 
 dcm_tags_to_check: dict = {'Modality': 'CT',
                            'BodyPartExamined': 'HEAD'}
@@ -45,6 +46,7 @@ def anonymize(dataset: pydicom.Dataset):
     dataset.walk(person_names_callback)
     dataset.walk(curves_callback)
 
+
 def delete_folder_content(folder: Path):
     for file_path in folder.iterdir():
         try:
@@ -54,3 +56,50 @@ def delete_folder_content(folder: Path):
                 shutil.rmtree(file_path)
         except Exception as e:
             print('Failed to delete %s. Reason: %s' % (file_path, e))
+
+
+def get_dicom_tags() -> list:
+    dicom_tags = ['SeriesInstanceUID',
+                  'Modality',
+                  'BodyPartExamined',
+                  'StudyDescription',
+                  'SeriesDescription',
+                  'Manufacturer',
+                  'ManufacturerModelName',
+                  'SpatialResolution',
+                  'PatientAge',
+                  'PatientSex',
+                  'ImagesInAcquisition',
+                  'LossyImageCompression',
+                  'SliceThickness',
+                  'PixelSpacing',
+                  'SamplesPerPixel']
+    return dicom_tags
+
+
+def get_series_info(series_path: Path) -> dict:
+    dicom_tags = {k: None for k in get_dicom_tags()}
+
+    float_tags = ['SpatialResolution', 'SliceThickness']
+
+    series_id = sitk.ImageSeriesReader.GetGDCMSeriesIDs(str(series_path))[0]
+    series_file_names = sitk.ImageSeriesReader.GetGDCMSeriesFileNames(str(series_path), series_id)
+
+    with dcmread(series_file_names[0], stop_before_pixels=True) as dicom_file:
+        for dcm_tag in dicom_tags.keys():
+            try:
+                val = getattr(dicom_file, dcm_tag)
+                if dcm_tag in float_tags:
+                    dicom_tags[dcm_tag] = float(val)
+                elif dcm_tag == 'SamplesPerPixel':
+                    dicom_tags[dcm_tag] = int(val)
+                elif dcm_tag == 'PatientAge':
+                    dicom_tags[dcm_tag] = int(val[:val.index('Y')])
+                else:
+                    dicom_tags[dcm_tag] = val
+
+            except AttributeError:
+                pass
+
+    dicom_tags['NumberOfSlices'] = len(series_file_names)
+    return dicom_tags

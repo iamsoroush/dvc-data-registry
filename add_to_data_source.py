@@ -109,7 +109,7 @@ class LinearFlow(FlowSpec):
         #     stream = os.popen(cmd)
         #     print(stream.read().strip())
 
-        cmd = f'DATA_ROOT={self.datasets_folder} TARGET_DS_NAME={self.data_source_name} ADDED_DS_PATH={self.src_dir} sh dvcpush.sh '
+        cmd = f'DATA_ROOT="{self.datasets_folder}" TARGET_DS_NAME="{self.data_source_name}" ADDED_DS_PATH="{self.src_dir}" sh dvcpush.sh '
         stream = os.popen(cmd)
         print(stream.read().strip())
 

@@ -7,12 +7,14 @@ import pydicom
 from pydicom import dcmread
 from pydantic import BaseModel
 
-dcm_tags_to_check: dict = {'Modality': 'CT',
-                           'BodyPartExamined': 'HEAD'}
-image_type_ = "AXIAL"
 
+def get_qualified_series_id_for_study(study_path: Path,
+                                      min_dcm_files: int = 10,
+                                      min_slice_thickness: float = 4) -> typing.List[str]:
+    dcm_tags_to_check: dict = {'Modality': 'CT',
+                               'BodyPartExamined': 'HEAD'}
+    image_type_ = "AXIAL"
 
-def get_qualified_series_id_for_study(study_path: Path, min_dcm_files: int = 10) -> typing.List[str]:
     qualified = list()
     if study_path.is_dir():
         series_ids = sitk.ImageSeriesReader.GetGDCMSeriesIDs(str(study_path))
@@ -25,11 +27,11 @@ def get_qualified_series_id_for_study(study_path: Path, min_dcm_files: int = 10)
                 conditions.append(eval('dcm_file.' + tag + '.upper()') == dcm_tags_to_check[tag].upper())
             conditions.append(image_type_.upper() in [i.upper() for i in dcm_file.ImageType])
             conditions.append(len(series_file_names) >= min_dcm_files)
+            conditions.append(float(dcm_file.SliceThickness) >= min_slice_thickness)
 
             if all(conditions):
-                # print(
-                #     f'series {sid} in study {study_path} is a CT-Head series with {len(series_file_names)} dicom files')
                 qualified.append(sid)
+
     return qualified
 
 
@@ -59,7 +61,8 @@ def delete_folder_content(folder: Path):
 
 
 def get_dicom_tags() -> list:
-    dicom_tags = ['SeriesInstanceUID',
+    dicom_tags = ['StudyInstanceUID',
+                  'SeriesInstanceUID',
                   'Modality',
                   'BodyPartExamined',
                   'StudyDescription',
@@ -94,7 +97,15 @@ def get_series_info(series_path: Path) -> dict:
                 elif dcm_tag == 'SamplesPerPixel':
                     dicom_tags[dcm_tag] = int(val)
                 elif dcm_tag == 'PatientAge':
-                    dicom_tags[dcm_tag] = int(val[:val.index('Y')])
+                    if isinstance(val, str):
+                        val_lower = val.lower()
+                        if '/' not in val_lower:
+                            dicom_tags[dcm_tag] = int(val_lower[:val_lower.index('y')])
+                        else:
+                            dicom_tags[dcm_tag] = int(val_lower[:val_lower.index('/')])
+                    else:
+                        dicom_tags[dcm_tag] = val
+
                 else:
                     dicom_tags[dcm_tag] = val
 

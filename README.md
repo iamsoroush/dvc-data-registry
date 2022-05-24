@@ -10,8 +10,8 @@
 2. run the pipeline -> `python add_to_data_source.py run --src-dir "/Users/soroush/Datasets/CT Brain/local/Other" --datasource-name test`
 
 [//]: # (3. add and commit -> `DATA_ROOT="CTBrain Datasets" DS_NAME="test" sh dvcpush.sh`)
-4. tag -> `git tag ctbrain-raw`
-5. push -> `git push origin ctbrain-raw`
+3. tag -> `git tag ctbrain-raw`
+4. push -> `git push origin ctbrain-raw`
 
 
 ## Import a data-source (experimentation side)

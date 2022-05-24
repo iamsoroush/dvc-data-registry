@@ -35,7 +35,8 @@ class LinearFlow(FlowSpec):
 
         for study_path in p.iterdir():
             series_ids = get_qualified_series_id_for_study(study_path)
-            self.qualified_series[study_path] = series_ids
+            if any(series_ids):
+                self.qualified_series[study_path] = series_ids[0]
 
         self.next(self.copy_to_dst)
 
@@ -47,25 +48,25 @@ class LinearFlow(FlowSpec):
 
         self.dst_series_paths = list()
 
-        for study_path, sids in self.qualified_series.items():
-            for sid in sids:
-                series_dst = dst.joinpath(sid)
-                if series_dst.exists():
-                    if not self.overwrite:
-                        print(f'series {sid} is already transformed, skipping ..')
-                        continue
-                    else:
-                        print(f'WARNING: series {series_dst} exist, overwriting ..')
-                        delete_folder_content(series_dst)
+        for study_path, sid in self.qualified_series.items():
+            # for sid in sids:
+            series_dst = dst.joinpath(sid)
+            if series_dst.exists():
+                if not self.overwrite:
+                    print(f'series {sid} is already transformed, skipping ..')
+                    continue
+                else:
+                    print(f'WARNING: series {series_dst} exist, overwriting ..')
+                    delete_folder_content(series_dst)
 
-                series_dst.mkdir()
-                self.dst_series_paths.append(series_dst)
+            series_dst.mkdir()
+            self.dst_series_paths.append(series_dst)
 
-                series_file_names = sitk.ImageSeriesReader.GetGDCMSeriesFileNames(str(study_path), sid)
+            series_file_names = sitk.ImageSeriesReader.GetGDCMSeriesFileNames(str(study_path), sid)
 
-                print(f'transforming files to {series_dst}')
-                for sfn in series_file_names:
-                    shutil.copyfile(sfn, series_dst.joinpath(Path(sfn).name))
+            print(f'transforming files to {series_dst}')
+            for sfn in series_file_names:
+                shutil.copyfile(sfn, series_dst.joinpath(Path(sfn).name))
         self.next(self.anonymize)
 
     @step
@@ -109,9 +110,9 @@ class LinearFlow(FlowSpec):
         #     stream = os.popen(cmd)
         #     print(stream.read().strip())
 
-        cmd = f'DATA_ROOT="{self.datasets_folder}" TARGET_DS_NAME="{self.data_source_name}" ADDED_DS_PATH="{self.src_dir}" sh dvcpush.sh '
-        stream = os.popen(cmd)
-        print(stream.read().strip())
+        # cmd = f'DATA_ROOT="{self.datasets_folder}" TARGET_DS_NAME="{self.data_source_name}" ADDED_DS_PATH="{self.src_dir}" sh dvcpush.sh '
+        # stream = os.popen(cmd)
+        # print(stream.read().strip())
 
         self.next(self.end)
 

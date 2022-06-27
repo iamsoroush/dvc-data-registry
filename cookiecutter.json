@@ -1,4 +1,4 @@
 {
-  "project_name": "project_name",
-  "repo_name": "{{ cookiecutter.project_name.lower().replace(' ', '_') }}",
+    "project_name": "dvc_data_registry",
+    "repo_name": "{{ cookiecutter.project_name.lower().replace(' ', '_') }}",
 }
